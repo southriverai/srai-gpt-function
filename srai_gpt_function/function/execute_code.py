@@ -1,6 +1,27 @@
-class ExecuteCode:
-    @staticmethod
-    def execute_code(code: str) -> str:
+from srai_gpt_function.function.gpt_function import GptFunction
+
+
+class ExecuteCode(GptFunction):
+    def __init__(self):
+        super().__init__("execute_code")
+
+    def get_descriptor(self) -> dict:
+        return {
+            "name": "execute_code",
+            "description": "Runs the given python code on my platform",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "The python code that should be executed",
+                    },
+                },
+                "required": ["code"],
+            },
+        }
+
+    def run(self, code: str) -> str:
         """Get the current weather in a given location"""
 
         # sanitize code
@@ -22,19 +43,3 @@ class ExecuteCode:
         exec(code)
 
         return "completed"
-
-    def descriptor() -> dict:
-        return {
-            "name": "execute_code",
-            "description": "Runs the given python code on my platform",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "code": {
-                        "type": "string",
-                        "description": "The python code that should be executed",
-                    },
-                },
-                "required": ["code"],
-            },
-        }

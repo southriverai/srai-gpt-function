@@ -1,8 +1,8 @@
-import openai
-import json
-
+import os
 
 from srai_gpt_function.function.execute_code import ExecuteCode
+from srai_gpt_function.function.create_function import CreateFunction
+
 from srai_gpt_function.function_client import FunctionClient
 
 # TODO use pydantic to do this
@@ -10,8 +10,11 @@ from srai_gpt_function.function_client import FunctionClient
 if __name__ == "__main__":
     client = FunctionClient()
     # Step 1: send the conversation and available functions to GPT
+    client.register_function(ExecuteCode())
     client.register_function(
-        "execute_code", ExecuteCode.execute_code, ExecuteCode.descriptor()
+        CreateFunction(
+            os.path.join(os.getcwd(), "..", "srai_gpt_function.function", "function")
+        )
     )
 
     response = client.call_chain(
