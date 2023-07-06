@@ -18,7 +18,7 @@ if __name__ == "__main__":
     client.register_function(CreateFunction(client, path_dir_function, "frame.py"))
 
     response = client.call_chain(
-        "Create a function called 'get_my_ip' that finds my world ip and returns it"
+        "Create a function called 'get_contect_info.py' that finds contact information given a website url."
     )
     response_message = response["choices"][0]["message"]
 
@@ -29,6 +29,6 @@ if __name__ == "__main__":
         response = client.call_function(response_message)
 
     # Step 4 ask for the ip
-    response = client.call_chain("What is my ip?")
+    response = client.call_chain("https://www.freddiemac.com/about/contact-us")
 
     print(response)
