@@ -1,3 +1,4 @@
+from typing import Optional
 import openai
 import json
 from srai_gpt_function.function.gpt_function import GptFunction
@@ -5,10 +6,12 @@ from tenacity import retry, wait_random_exponential, stop_after_attempt
 
 
 class FunctionClient:
-    def __init__(self):
+    def __init__(self, api_key: Optional[str] = None, verbose: bool = False):
+        self.api_key = api_key
         self.message_list = []
         self.function_dict = {}
         self.function_descriptor_list = []
+        self.verbose = verbose
 
     def reset(self):
         self.message_list = []
@@ -19,6 +22,11 @@ class FunctionClient:
         self,
         function: GptFunction,
     ):
+        if function.name in self.function_dict:
+            return
+
+        if self.verbose:
+            print(f"registering function: {function.name}")
         self.function_dict[function.name] = function.run
         self.function_descriptor_list.append(function.descriptor)
 
@@ -42,10 +50,17 @@ class FunctionClient:
                 "content": prompt,
             }
         ]
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
-            messages=message_list,  # auto is default, but we'll be explicit
-        )  # get a new response from GPT where it can see the function response
+        if self.api_key is None:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-0613",
+                messages=message_list,
+            )
+        else:
+            response = openai.ChatCompletion.create(
+                api_key=self.api_key,
+                model="gpt-3.5-turbo-0613",
+                messages=message_list,
+            )
         print("end call")
         return response["choices"][0]["message"]["content"]
 
@@ -53,12 +68,23 @@ class FunctionClient:
     def call(self) -> openai.ChatCompletion:
         print("begin call")
         print("message_list: ", self.message_list)
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
-            messages=self.message_list,
-            functions=self.function_descriptor_list,
-            function_call="auto",  # auto is default, but we'll be explicit
-        )  # get a new response from GPT where it can see the function response
+
+        if self.api_key is None:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-0613",
+                messages=self.message_list,
+                functions=self.function_descriptor_list,
+                function_call="auto",  # auto is default, but we'll be explicit
+            )
+        else:
+            response = openai.ChatCompletion.create(
+                api_key=self.api_key,
+                model="gpt-3.5-turbo-0613",
+                messages=self.message_list,
+                functions=self.function_descriptor_list,
+                function_call="auto",  # auto is default, but we'll be explicit
+            )
+
         response_message = response["choices"][0]["message"]
         self.message_list.append(response_message)
         print("end call")

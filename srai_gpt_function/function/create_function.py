@@ -164,6 +164,10 @@ class CreateFunction(GptFunction):
         print("code_end: ")
         exec(code)
 
+        classes = dict(globals())
+        class_obj = classes.get(fuction_name_capital, None)
+        if class_obj is not None:
+            self.function_client.register_function(class_obj())
         return "completed"
 
     def get_descriptor(self) -> dict:

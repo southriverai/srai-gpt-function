@@ -11,14 +11,19 @@ class GetMyIp(GptFunction):
         super().__init__("get_my_ip")
 
     def get_descriptor(self) -> dict:
-        return {"name": "get_my_ip", "description": "This function uses the requests library to get the IP address of the user.\n\n", "parameters": {"type": "object", "properties": {}, "required": []}}
+        return {
+            "name": "get_my_ip",
+            "description": "Retrieves the public IP address of the current machine.\n\n",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        }
 
     def run() -> str:
         """
-        This function uses the requests library to get the IP address of the user.
-    
+        Retrieves the public IP address of the current machine.
+
         Returns:
-            str: The IP address.
+            str: The public IP address of the machine.
         """
-        response = requests.get('https://api.ipify.org')
-        return response.text
+        response = requests.get("https://api.ipify.org?format=json")
+        ip = response.json()["ip"]
+        return ip
