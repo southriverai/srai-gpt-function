@@ -8,13 +8,15 @@ import ast
 class CreateFunction(GptFunction):
     """Create a function"""
 
-    def __init__(
+    def __init__(self):
+        super().__init__("create_function")
+
+    def initialize(
         self,
         function_client: FunctionClient,
         path_dir_function: str,
         path_file_frame: str,
-    ):
-        super().__init__("create_function")
+    ) -> None:
         self.function_client = function_client
         self.path_dir_function = path_dir_function
         self.path_file_frame = path_file_frame
@@ -64,6 +66,7 @@ class CreateFunction(GptFunction):
         code += f"\n    def run{body_lines[0]}\n"
         for line in body_lines[1:]:
             code += "    " + line + "\n"
+        code = code.replace("run()", "run(self)")
         return code
 
     def split_code(self, function_name: str, code: str) -> str:

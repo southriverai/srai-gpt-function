@@ -17,7 +17,7 @@ class GetMyIp(GptFunction):
             "parameters": {"type": "object", "properties": {}, "required": []},
         }
 
-    def run() -> str:
+    def run(self) -> str:
         """
         Retrieves the public IP address of the current machine.
 
