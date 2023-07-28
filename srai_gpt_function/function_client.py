@@ -1,10 +1,13 @@
-from typing import Optional
+from typing import List, Optional
 import openai
 import json
 from srai_gpt_function.function.gpt_function import GptFunction
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from srai_gpt_function.rate_limiting_model import RateLimitingModel
 from srai_core.jsondict_store import JsondictStore
+import os
+import importlib
+import inspect
 
 
 class FunctionClient:
@@ -23,10 +26,36 @@ class FunctionClient:
         self.function_dict = {}
         self.function_descriptor_list = []
 
+    def find_list_gpt_function(self, module_namespaces) -> List[GptFunction]:
+        return self.find_derived_classes(GptFunction, module_namespaces)
+
+    def find_derived_classes(self, base_class, path_dir_function) -> List[object]:
+        function_objects = []
+        for filename in os.listdir(path_dir_function):
+            if filename.endswith(".py"):
+                module_name = filename[:-3]  # Remove the .py extension
+                module_path = os.path.join(path_dir_function, filename)
+                spec = importlib.util.spec_from_file_location(module_name, module_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                for name, obj in inspect.getmembers(module):
+                    if (
+                        inspect.isclass(obj)
+                        and issubclass(obj, base_class)
+                        and obj != base_class
+                    ):
+                        function_objects.append(obj())
+        return function_objects
+
     def reset(self):
         self.message_list = []
         self.function_dict = {}
         self.function_descriptor_list = []
+
+    def register_function_group(self, path_dir_function: str) -> None:
+        list_function_object = self.find_list_gpt_function(path_dir_function)
+        for function_object in list_function_object:
+            self.register_function(function_object)
 
     def register_function(
         self,
@@ -129,8 +158,8 @@ class FunctionClient:
         return response_dict
 
     def parse_arguments_to_json(self, json_string: str) -> str:
-        with open("arguments.json", "w") as file:
-            file.write(json_string)
+        with open("arguments.json", "wb") as file:
+            file.write(json_string.encode("utf-8"))
         json_string = json_string.replace("\n", "\\n")
         json_string = json_string.replace("{\\n", "{")
         json_string = json_string.replace("\\n}", "}")
@@ -143,24 +172,30 @@ class FunctionClient:
             raise e
 
     def call_function(self, response_message: dict):
-        function_name = response_message["function_call"]["name"]
-        if self.verbose:
-            print(f"Calling function {function_name}")
-            print(response_message["function_call"]["arguments"])
+        try:
+            function_name = response_message["function_call"]["name"]
+            if self.verbose:
+                print(f"Calling function {function_name}")
+                print(response_message["function_call"]["arguments"])
 
-        function_args = self.parse_arguments_to_json(
-            response_message["function_call"]["arguments"]
-        )
-        function_response = self.function_dict[function_name](**function_args)
+            function_args = self.parse_arguments_to_json(
+                response_message["function_call"]["arguments"]
+            )
+            function_response = self.function_dict[function_name](**function_args)
 
-        self.message_list.append(
-            {
-                "role": "function",
-                "name": function_name,
-                "content": function_response,
-            }
-        )
-        if self.verbose:
-            print(f"Done calling function {function_name}")
-            print("alling api again")
-        return self.call()
+            self.message_list.append(
+                {
+                    "role": "function",
+                    "name": function_name,
+                    "content": function_response,
+                }
+            )
+            if self.verbose:
+                print(f"Done calling function {function_name}")
+                print("alling api again")
+            return self.call()
+        except Exception as e:
+            print("Error in call_function")
+            print(response_message)
+            print(function_name)
+            raise e
