@@ -27,10 +27,7 @@ if __name__ == "__main__":
     function_object = SendVoiceMessage()
     api_token = os.environ["VOIPGRID_API_KEY"]
     function_object.initialize(api_token)
-    function_object.add_recipient("Chiara", "+393279375210")
-    function_object.add_recipient("Jaap", "+31642634954")
-    function_object.add_recipient("Chris", "+359877604211")
-    function_object.add_recipient("Dominica", "+48602155705")
+
 
     client.register_function(function_object)
 
